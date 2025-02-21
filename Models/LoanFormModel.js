@@ -20,7 +20,7 @@ const loanFormSchema = new mongoose.Schema({
         required: true
     },
 
-    AccountHoldernName:
+    AccountHolderName:
     {
         type: String,
         required: true

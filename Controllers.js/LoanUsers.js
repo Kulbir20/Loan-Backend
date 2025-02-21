@@ -44,3 +44,28 @@ exports.loanUsers = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
     }
 };
+
+
+exports.userDetails = async (req, res) => {
+    try {
+        const { UserId } = req.params;
+        const result = await LoanModel.findById(UserId).populate(
+            "UserId",
+            "FirstName LastName ContactNumber Email PanCard AdhaarCard"
+        );
+
+        if (!result || result.length === 0) {
+            return res.status(404).json({ success: false, message: "Applicant Details Not Found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            msg: "Applicant Details Found",
+            details: result, // Return a single object for individual requests
+        });
+
+    } catch (error) {
+        console.error("Error fetching loan details:", error.message);
+        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
