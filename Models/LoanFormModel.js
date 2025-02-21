@@ -4,7 +4,7 @@ const loanFormSchema = new mongoose.Schema({
     UserId:
     {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
+        ref: 'users',
         required: true
     },
 

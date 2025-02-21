@@ -19,9 +19,10 @@ exports.signUp = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const result = await UserModel.find({ Email: req.body.email });
+        const result = await UserModel.findOne({ Email: req.body.email });
         if (result) {
-            res.status(200).json({ msg: "Login Successfully", data: result });
+            console.log(result)
+            res.status(200).json({ msg: "Login Successfully", result });
         } else {
             res.status(404).json({ msg: "email not found" });
         }
