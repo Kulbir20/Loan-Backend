@@ -1,28 +1,49 @@
 const UserModel = require("../Models/UserModel");
+const jwt = require("jsonwebtoken");
+const { generateToken } = require("./auth");
 
 exports.signUp = async (req, res) => {
     try {
-        const UserRecord = new UserModel({ FirstName: req.body.firstName, LastName: req.body.lastName, ContactNumber: req.body.contactNumber,Email: req.body.email,Password: req.body.pass,Role: req.body.role,PanCard: req.body.panCard,AdhaarCard:req.body.adhaarCard  });
+        const { FirstName, LastName, ContactNumber, Email, Password, Role, PanCard, AdhaarCard } = req.body;
 
-        const existingUser = await UserModel.findOne({ Email: req.body.email });
+        // Check if user already exists
+        const existingUser = await UserModel.findOne({ Email }); 
         if (existingUser) {
-            return res.status(400).json({ msg: "User Already Exist" });
+            return res.status(400).json({ msg: "User Already Exists" });
         }
 
-        const result = await UserRecord.save();
-    //   const token =   jwt.sign({ id: result._id }, secretKey, { expiresIn: '300s' });
-        return  res.status(200).json({ msg: "Signup Successfully", result });
+        const NewRecord = new UserModel({
+            FirstName,
+            LastName,
+            ContactNumber,
+            Email,
+            Password,
+            Role,
+            PanCard,
+            AdhaarCard
+        });
+        const result = await NewRecord.save();
+        const token = generateToken(user._id)
+
+        return res.status(201).json({ msg: "Signup Successful", user: result, token });
+
     } catch (error) {
-        res.status(500).json({ msg: 'Internal server error', error });
+        console.error("Signup error:", error);
+        res.status(500).json({ msg: "Internal Server Error", error });
     }
 };
 
+
 exports.login = async (req, res) => {
     try {
-        const result = await UserModel.findOne({ Email: req.body.email });
+        const { Email} = req.body;
+        const result = await UserModel.findOne({ Email:Email });
+        console.log(Email)
+        const token = generateToken(result._id)
+        console.log(token)
         if (result) {
             console.log(result)
-            res.status(200).json({ msg: "Login Successfully", result });
+            res.status(200).json({ msg: "Login Successfully", result, token });
         } else {
             res.status(404).json({ msg: "email not found" });
         }
@@ -31,19 +52,42 @@ exports.login = async (req, res) => {
     }
 };
 
+exports.verifyToken = (req, res, next) => {
+    let token = req.headers["authorization"];
+    console.log("Received Token:", token); // Debug log
+
+    if (!token) {
+        return res.status(403).json({ msg: "Token is required" });
+    }
+
+    if (token.startsWith("Bearer ")) {
+        token = token.split(" ")[1].trim();
+    }
+    console.log(token)
+
+    try {
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        console.log("Decoded Token:", decoded); // Debug log
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(401).json({ msg: "Invalid or expired token" });
+    }
+};
+
 exports.getUsers = async (req, res) => {
     try {
         const page = req.query.page || 1;
         const limit = req.query.limit || 10;
-        
-        const totalUsers = await UserModel.countDocuments(); 
-        const totalPages = Math.ceil(totalUsers / limit);  
+
+        const totalUsers = await UserModel.countDocuments();
+        const totalPages = Math.ceil(totalUsers / limit);
 
         const result = await UserModel.find()
             .skip((page - 1) * limit)
             .limit(limit);
 
-        return res.status(200).json({ msg: "List Of Users", result, totalPages }); 
+        return res.status(200).json({ msg: "List Of Users", result, totalPages });
     } catch (err) {
         return res.status(500).json({ msg: 'Internal server error', err });
     }
